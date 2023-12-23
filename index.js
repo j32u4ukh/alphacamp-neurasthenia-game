@@ -9,11 +9,52 @@ const SYMBOLS = [
   "https://assets-lighthouse.alphacamp.co/uploads/image/file/17988/__.png",
 ];
 
+const GAME_STATE = {
+  WaitFirstCard: "WaitFirstCard",
+  WaitSecondCard: "WaitSecondCard",
+  CardMatching: "CardMatching",
+  GameFinished: "GameFinished",
+};
+
+const utility = {
+  getRandomNumbers(count) {
+    const numbers = Array.from(Array(count).keys());
+    for (let index = numbers.length - 1; index > 0; index--) {
+      let randomIndex = Math.floor(Math.random() * (index + 1));
+      [numbers[index], numbers[randomIndex]] = [
+        numbers[randomIndex],
+        numbers[index],
+      ];
+    }
+    return numbers;
+  },
+};
+
+const model = {
+  first: null,
+  second: null,
+  score: 0,
+  nFlip: 0,
+  timeout: 1000,
+  resetCrads() {
+    this.first = null;
+    this.second = null;
+  },
+  isMatched() {
+    if (this.first === null || this.second === null) {
+      return false;
+    }
+    const first = Number(this.first.dataset.index) % 13;
+    const second = Number(this.second.dataset.index) % 13;
+    console.log(`first: ${first}, second: ${second}, #flip: ${model.nFlip}`);
+    return first === second;
+  },
+};
+
 const view = {
-  displayCards() {
+  displayCards(numbers) {
     const cards = document.querySelector("#cards");
-    cards.innerHTML = utility
-      .getRandomNumbers(52)
+    cards.innerHTML = numbers
       .map((index) => this.getCardElement(index))
       .join("");
   },
@@ -47,36 +88,93 @@ const view = {
     }
   },
   flipCard(card) {
+    // 翻到正面
     if (card.classList.contains("back")) {
-      // 回傳正面
       card.classList.remove("back");
       card.innerHTML = this.getCardContent(Number(card.dataset.index));
+    }
+    // 翻到背面
+    else {
+      card.classList.add("back");
+      card.innerHTML = null;
+    }
+  },
+  pairedCard(firstCard, secondCard) {
+    firstCard.classList.add("paired");
+    secondCard.classList.add("paired");
+  },
+};
+
+const controller = {
+  game_state: GAME_STATE.WaitFirstCard,
+  init() {
+    view.displayCards(utility.getRandomNumbers(52));
+
+    document.querySelectorAll(".card").forEach((card) => {
+      card.addEventListener("click", (event) => {
+        this.onClickListener(card);
+      });
+    });
+  },
+  handleSuccess() {
+    // Update score
+    model.score += 10;
+    view.pairedCard(model.first, model.second);
+    // Change game state according to the score
+    if (model.score === 260) {
+      this.game_state = GAME_STATE.GameFinished;
+    } else {
+      this.game_state = GAME_STATE.WaitFirstCard;
+    }
+    console.log(
+      `Success! Score: ${model.score}, game_state: ${this.game_state}`
+    );
+
+    // Reset model data
+    model.resetCrads();
+  },
+  handleFailed() {
+    setTimeout(() => {
+      // Reset card state
+      view.flipCard(model.first);
+      view.flipCard(model.second);
+
+      // Reset model data
+      model.resetCrads();
+
+      // Change game state according to matching result
+      this.game_state = GAME_STATE.WaitFirstCard;
+      console.log(
+        `Failed! Score: ${model.score}, game_state: ${this.game_state}`
+      );
+    }, model.timeout);
+  },
+  onClickListener(card) {
+    if (!card.classList.contains("back")) {
       return;
     }
-    // 回傳背面
-    card.classList.add("back");
-    card.innerHTML = null;
-  },
-};
-
-const utility = {
-  getRandomNumbers(count) {
-    const numbers = Array.from(Array(count).keys());
-    for (let index = numbers.length - 1; index > 0; index--) {
-      let randomIndex = Math.floor(Math.random() * (index + 1));
-      [numbers[index], numbers[randomIndex]] = [
-        numbers[randomIndex],
-        numbers[index],
-      ];
+    switch (this.game_state) {
+      case GAME_STATE.WaitFirstCard:
+        model.first = card;
+        view.flipCard(card);
+        this.game_state = GAME_STATE.WaitSecondCard;
+        break;
+      case GAME_STATE.WaitSecondCard:
+        this.game_state = GAME_STATE.CardMatching;
+        model.second = card;
+        model.nFlip++;
+        view.flipCard(card);
+        // Check if cards matched
+        if (model.isMatched()) {
+          this.handleSuccess();
+        } else {
+          this.handleFailed();
+        }
+        break;
+      case GAME_STATE.GameFinished:
+        break;
     }
-    return numbers;
   },
 };
 
-view.displayCards();
-
-document.querySelectorAll(".card").forEach((card) => {
-  card.addEventListener("click", (event) => {
-    view.flipCard(card);
-  });
-});
+controller.init();
