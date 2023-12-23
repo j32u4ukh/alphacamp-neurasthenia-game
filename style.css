@@ -1,0 +1,45 @@
+#cards {
+    display: flex;
+}
+
+.card {
+    /* ===== 每個 Card 在 #cards 中如何配置 ===== */
+
+    /* flex -> flex-grow | flex-shrink | flex-basis
+    由於 flex 為高容錯設計，順序寫成 flex-basis | flex-grow | flex-shrink 也可以正常運作 
+    flex-grow: 若有剩餘空間，分配加權，0 表示不分配剩餘空間；2 比 1 會多分一份剩餘空間
+    flex-shrink: 空間不足如何收縮(收縮比例)
+    flex-basis: 每個 .card 在軸上的占比*/
+    flex: 0 1 7%;
+
+    /* 依視窗的寬度等比例變化，100 vw 表示全部 
+    設定為 8vw，代表視窗大小的 8%*/
+    height: 8vw;
+
+    border: 2px solid #e0e0e0;
+
+    /* ===== Card 內部分配 ===== */
+
+    /* 讓 .card 變成一個 flex 容器 */
+    display: flex;
+
+    /* 意指排列順序從上到下，再從左到右 */
+    flex-direction: column;
+
+    /* 讓元素聚集在中間，且保持均分的間隔（如果用 space-between 的話，元素都會貼在邊緣） */
+    justify-content: space-around;
+}
+
+.card img {
+    max-width: 30%;
+    align-self: center;
+}
+
+.card p {
+    margin: 3px;
+    font-size: 10px;
+}
+
+.card p:last-child {
+    transform: rotate(180deg);
+}
