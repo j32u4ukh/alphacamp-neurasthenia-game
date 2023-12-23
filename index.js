@@ -12,7 +12,10 @@ const SYMBOLS = [
 const view = {
   displayCards() {
     const cards = document.querySelector("#cards");
-    cards.innerHTML = this.getCardElement(12);
+    cards.innerHTML = utility
+      .getRandomNumbers(52)
+      .map((index) => this.getCardElement(index))
+      .join("");
   },
   getCardElement(index) {
     if (index < 0 || 52 <= index) {
@@ -40,6 +43,20 @@ const view = {
       default:
         return number;
     }
+  },
+};
+
+const utility = {
+  getRandomNumbers(count) {
+    const numbers = Array.from(Array(count).keys());
+    for (let index = numbers.length - 1; index > 0; index--) {
+      let randomIndex = Math.floor(Math.random() * (index + 1));
+      [numbers[index], numbers[randomIndex]] = [
+        numbers[randomIndex],
+        numbers[index],
+      ];
+    }
+    return numbers;
   },
 };
 
