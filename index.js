@@ -116,6 +116,27 @@ const view = {
   updateTriedTime(nTry) {
     this.tried.innerHTML = `You've tried: ${nTry} times`;
   },
+  appendWrongAnimation(...cards) {
+    cards.map((card) => {
+      card.classList.add("wrong");
+      card.addEventListener(
+        "animationend",
+        (event) => event.target.classList.remove("wrong"),
+        { once: true }
+      );
+    });
+  },
+  showGameFinished() {
+    const div = document.createElement("div");
+    div.classList.add("completed");
+    div.innerHTML = `
+      <p>Complete!</p>
+      <p>Score: ${model.score}</p>
+      <p>You've tried: ${model.nTry} times</p>
+    `;
+    const header = document.querySelector("header");
+    header.before(div);
+  },
 };
 
 const controller = {
@@ -137,6 +158,7 @@ const controller = {
     view.pairedCard(model.first, model.second);
     // Change game state according to the score
     if (model.score === 260) {
+      view.showGameFinished();
       this.game_state = GAME_STATE.GameFinished;
     } else {
       this.game_state = GAME_STATE.WaitFirstCard;
@@ -145,6 +167,7 @@ const controller = {
     model.resetCrads();
   },
   handleFailed() {
+    view.appendWrongAnimation(model.first, model.second);
     setTimeout(() => {
       // Reset card state
       view.flipCards(model.first, model.second);
