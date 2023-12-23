@@ -21,14 +21,16 @@ const view = {
     if (index < 0 || 52 <= index) {
       return "";
     }
+    return `<div data-index="${index}" class="card back"></div>`;
+  },
+  getCardContent(index) {
     const number = this.transformNumber((index % 13) + 1);
     const symbol = SYMBOLS[Math.floor(index / 13)];
     return `
-      <div class="card">
-        <p>${number}</p>
-        <img src="${symbol}" />
-        <p>${number}</p>
-      </div>`;
+      <p>${number}</p>
+      <img src="${symbol}" />
+      <p>${number}</p>
+    `;
   },
   transformNumber(number) {
     switch (number) {
@@ -43,6 +45,17 @@ const view = {
       default:
         return number;
     }
+  },
+  flipCard(card) {
+    if (card.classList.contains("back")) {
+      // 回傳正面
+      card.classList.remove("back");
+      card.innerHTML = this.getCardContent(Number(card.dataset.index));
+      return;
+    }
+    // 回傳背面
+    card.classList.add("back");
+    card.innerHTML = null;
   },
 };
 
@@ -61,3 +74,9 @@ const utility = {
 };
 
 view.displayCards();
+
+document.querySelectorAll(".card").forEach((card) => {
+  card.addEventListener("click", (event) => {
+    view.flipCard(card);
+  });
+});
