@@ -34,7 +34,7 @@ const model = {
   first: null,
   second: null,
   score: 0,
-  nFlip: 0,
+  nTry: 0,
   timeout: 1000,
   resetCrads() {
     this.first = null;
@@ -46,12 +46,17 @@ const model = {
     }
     const first = Number(this.first.dataset.index) % 13;
     const second = Number(this.second.dataset.index) % 13;
-    console.log(`first: ${first}, second: ${second}, #flip: ${model.nFlip}`);
     return first === second;
   },
 };
 
 const view = {
+  score: null,
+  tried: null,
+  init() {
+    this.score = document.querySelector(".score");
+    this.tried = document.querySelector(".tried");
+  },
   displayCards(numbers) {
     const cards = document.querySelector("#cards");
     cards.innerHTML = numbers
@@ -87,27 +92,36 @@ const view = {
         return number;
     }
   },
-  flipCard(card) {
-    // 翻到正面
-    if (card.classList.contains("back")) {
-      card.classList.remove("back");
-      card.innerHTML = this.getCardContent(Number(card.dataset.index));
-    }
-    // 翻到背面
-    else {
-      card.classList.add("back");
-      card.innerHTML = null;
-    }
+  flipCards(...cards) {
+    cards.map((card) => {
+      // 翻到正面
+      if (card.classList.contains("back")) {
+        card.classList.remove("back");
+        card.innerHTML = this.getCardContent(Number(card.dataset.index));
+      }
+      // 翻到背面
+      else {
+        card.classList.add("back");
+        card.innerHTML = null;
+      }
+    });
   },
   pairedCard(firstCard, secondCard) {
     firstCard.classList.add("paired");
     secondCard.classList.add("paired");
+  },
+  updateScore(score) {
+    this.score.innerHTML = `Score: ${score}`;
+  },
+  updateTriedTime(nTry) {
+    this.tried.innerHTML = `You've tried: ${nTry} times`;
   },
 };
 
 const controller = {
   game_state: GAME_STATE.WaitFirstCard,
   init() {
+    view.init();
     view.displayCards(utility.getRandomNumbers(52));
 
     document.querySelectorAll(".card").forEach((card) => {
@@ -119,6 +133,7 @@ const controller = {
   handleSuccess() {
     // Update score
     model.score += 10;
+    view.updateScore(model.score);
     view.pairedCard(model.first, model.second);
     // Change game state according to the score
     if (model.score === 260) {
@@ -126,27 +141,19 @@ const controller = {
     } else {
       this.game_state = GAME_STATE.WaitFirstCard;
     }
-    console.log(
-      `Success! Score: ${model.score}, game_state: ${this.game_state}`
-    );
-
     // Reset model data
     model.resetCrads();
   },
   handleFailed() {
     setTimeout(() => {
       // Reset card state
-      view.flipCard(model.first);
-      view.flipCard(model.second);
+      view.flipCards(model.first, model.second);
 
       // Reset model data
       model.resetCrads();
 
       // Change game state according to matching result
       this.game_state = GAME_STATE.WaitFirstCard;
-      console.log(
-        `Failed! Score: ${model.score}, game_state: ${this.game_state}`
-      );
     }, model.timeout);
   },
   onClickListener(card) {
@@ -156,14 +163,15 @@ const controller = {
     switch (this.game_state) {
       case GAME_STATE.WaitFirstCard:
         model.first = card;
-        view.flipCard(card);
+        view.flipCards(card);
         this.game_state = GAME_STATE.WaitSecondCard;
         break;
       case GAME_STATE.WaitSecondCard:
         this.game_state = GAME_STATE.CardMatching;
         model.second = card;
-        model.nFlip++;
-        view.flipCard(card);
+        model.nTry++;
+        view.updateTriedTime(model.nTry);
+        view.flipCards(card);
         // Check if cards matched
         if (model.isMatched()) {
           this.handleSuccess();
